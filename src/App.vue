@@ -1,189 +1,85 @@
-<script setup lang="ts">
-import { doGenerateSQL } from "./generator";
-import { importExample } from "./examples";
-import { onMounted, ref, toRaw } from "vue";
-import * as monaco from "monaco-editor";
-import { format } from "sql-formatter";
-import { GithubOutlined } from "@ant-design/icons-vue";
-
-import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
-import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
-import CssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
-import HtmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
-import TsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
-// eslint-disable-next-line no-undef
-import IStandaloneCodeEditor = monaco.editor.IStandaloneCodeEditor;
-import SearchableTree from "./components/SearchableTree.vue";
-
-(self as any).MonacoEnvironment = {
-  getWorker(_: any, label: any) {
-    if (label === "json") {
-      return new JsonWorker();
-    }
-    if (label === "css" || label === "scss" || label === "less") {
-      return new CssWorker();
-    }
-    if (label === "html" || label === "handlebars" || label === "razor") {
-      return new HtmlWorker();
-    }
-    if (label === "typescript" || label === "javascript") {
-      return new TsWorker();
-    }
-    return new EditorWorker();
-  },
-};
-
-const inputEditor = ref<IStandaloneCodeEditor>();
-const outputEditor = ref<IStandaloneCodeEditor>();
-const inputContainer = ref<HTMLElement>();
-const outputContainer = ref<HTMLElement>();
-const invokeTree = ref<InvokeTree>();
-const drawerVisible = ref(false);
-
-const getSQL = () => {
-  if (!inputEditor.value || !outputEditor.value) {
-    return;
-  }
-  const inputJSON = JSON.parse(toRaw(inputEditor.value).getValue());
-  const generateResult = doGenerateSQL(inputJSON);
-  if (!generateResult) {
-    return;
-  }
-  let result = format(generateResult.resultSQL);
-  // 针对执行引擎，处理自动格式化的问题
-  result = result.replaceAll("{ {", "{{");
-  result = result.replaceAll("} }", "}}");
-  toRaw(outputEditor.value).setValue(result);
-  // 获取调用树
-  invokeTree.value = [generateResult.invokeTree];
-  console.log(invokeTree.value);
-};
-
-const importExampleAndCal = () => {
-  if (inputEditor.value) {
-    const exampleJSON = importExample("complex");
-    toRaw(inputEditor.value).setValue(exampleJSON);
-    inputEditor.value.getAction("editor.action.formatDocument").run();
-  }
-};
-
-const showInvokeTree = () => {
-  if (!invokeTree.value) {
-    getSQL();
-  }
-  drawerVisible.value = true;
-};
-
-const initJSONValue = importExample("init");
-
-onMounted(() => {
-  if (inputContainer.value) {
-    const initValue = localStorage.getItem("draft") ?? initJSONValue;
-    inputEditor.value = monaco.editor.create(inputContainer.value, {
-      value: initValue,
-      language: "json",
-      theme: "vs-dark",
-      formatOnPaste: true,
-      automaticLayout: true,
-      fontSize: 16,
-      minimap: {
-        enabled: false,
-      },
-    });
-    setTimeout(() => {
-      if (inputEditor.value) {
-        inputEditor.value.getAction("editor.action.formatDocument").run();
-      }
-    }, 500);
-    setInterval(() => {
-      if (inputEditor.value) {
-        localStorage.setItem("draft", toRaw(inputEditor.value).getValue());
-      }
-    }, 3000);
-  }
-  if (outputContainer.value) {
-    outputEditor.value = monaco.editor.create(outputContainer.value, {
-      value: "",
-      language: "sql",
-      theme: "vs-dark",
-      formatOnPaste: true,
-      automaticLayout: true,
-      fontSize: 16,
-      minimap: {
-        enabled: false,
-      },
-    });
-  }
-});
-</script>
-
 <template>
-  <div>
-    <a-row justify="space-between" align="middle" :gutter="[0, 16]">
-      <h1 style="margin-bottom: 0">🔨 结构化 SQL 生成器</h1>
-      <a href="https://github.com/liyupi/sql-generator" target="_blank">
-        使用 JSON 来编写 SQL，告别重复代码，点击查看文档
-      </a>
-      <a-space size="large">
-        <a-button size="large" type="primary" @click="getSQL">
-          生成 SQL
-        </a-button>
-        <a-button size="large" type="primary" ghost @click="showInvokeTree">
-          查看调用树
-        </a-button>
-        <a-button size="large" type="default" @click="importExampleAndCal">
-          导入例子
-        </a-button>
-      </a-space>
-    </a-row>
-    <div style="margin-top: 16px" />
-    <a-row :gutter="[16, 16]">
-      <a-col :sm="24" :md="12">
-        <div
-          id="inputContainer"
-          ref="inputContainer"
-          style="height: 80vh; max-width: 100%"
-        />
-      </a-col>
-      <a-col :sm="24" :md="12">
-        <div
-          id="outputContainer"
-          ref="outputContainer"
-          style="height: 80vh; max-width: 100%"
-        />
-      </a-col>
-    </a-row>
-    <br />
-    <div style="margin-bottom: 16px">
-      yupi：你能体会手写一句 3000 行的 SQL、牵一发而动全身的恐惧么？
-    </div>
-    <a-row justify="center">
-      <a-space>
-        作者：<a href="https://github.com/liyupi" target="_blank">鱼皮</a>
-        <a-divider type="vertical" />
-        <a href="https://github.com/liyupi/sql-generator" target="_blank">
-          <github-outlined />
-          项目已开源，欢迎 star
-        </a>
-      </a-space>
-    </a-row>
-    <a-drawer
-      v-model:visible="drawerVisible"
-      title="调用树"
-      placement="right"
-      :body-style="{ width: '50vw' }"
-    >
-      <SearchableTree :tree="invokeTree" />
-    </a-drawer>
-  </div>
+  <a-layout style="min-height: 100vh">
+    <!-- 侧边栏 -->
+    <a-layout-sider v-model:collapsed="collapsed" collapsible>
+      <div class="logo" />
+      <a-menu
+        v-model:selectedKeys="selectedKeys"
+        v-model:openKeys="openKeys"
+        theme="dark"
+        mode="inline"
+      >
+        <!-- SQL 生成器菜单组 -->
+        <a-sub-menu key="sql">
+          <template #title>
+            <span>
+              <code-outlined />
+              <span>SQL 生成器</span>
+            </span>
+          </template>
+          <a-menu-item key="sql-query">
+            <router-link to="/sql/query">SQL 查询</router-link>
+          </a-menu-item>
+          <a-menu-item key="sql-generate">
+            <router-link to="/sql/generate">SQL 生成</router-link>
+          </a-menu-item>
+        </a-sub-menu>
+
+        <!-- Fund 查询菜单组 -->
+        <a-sub-menu key="fund">
+          <template #title>
+            <span>
+              <fund-outlined />
+              <span>Fund 查询</span>
+            </span>
+          </template>
+          <a-menu-item key="fund01">
+            <router-link to="/fund/fund01">Fund 01</router-link>
+          </a-menu-item>
+          <a-menu-item key="fund02">
+            <router-link to="/fund/fund02">Fund 02</router-link>
+          </a-menu-item>
+        </a-sub-menu>
+      </a-menu>
+    </a-layout-sider>
+
+    <!-- 主内容区 -->
+    <a-layout>
+      <a-layout-header style="background: #fff; padding: 0" />
+      <a-layout-content style="margin: 0 16px">
+        <div :style="{ padding: '24px', background: '#fff', minHeight: '360px' }">
+          <router-view></router-view>
+        </div>
+      </a-layout-content>
+      <a-layout-footer style="text-align: center">
+        SQL Generator ©2024 Created by Your Company
+      </a-layout-footer>
+    </a-layout>
+  </a-layout>
 </template>
 
+<script setup lang="ts">
+import { ref } from 'vue';
+import { CodeOutlined, FundOutlined } from '@ant-design/icons-vue';
+
+const collapsed = ref<boolean>(false);
+const selectedKeys = ref<string[]>(['sql-generate']);
+const openKeys = ref<string[]>(['sql']);
+</script>
+
 <style>
-#app {
-  padding: 20px;
+.logo {
+  height: 32px;
+  margin: 16px;
+  background: rgba(255, 255, 255, 0.3);
 }
 
-.ant-drawer-content-wrapper {
-  width: auto !important;
+.ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+}
+
+.site-layout-background {
+  background: #fff;
 }
 </style>
