@@ -3,6 +3,7 @@ import SqlGenerate from '../views/sql/SqlGenerate.vue';
 import SqlQuery from '../views/sql/SqlQuery.vue';
 import Fund01 from '../views/fund/Fund01.vue';
 import Fund02 from '../views/fund/Fund02.vue';
+import dmsQuery from "@/views/dms/dmsQuery.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -28,7 +29,13 @@ const routes: Array<RouteRecordRaw> = [
     path: '/fund/fund02',
     name: 'Fund02',
     component: Fund02
+  },
+  {
+    path: '/dms/dmsQuery',
+    name: 'dmsQuery',
+    component: dmsQuery
   }
+
 ];
 
 const router = createRouter({

@@ -40,6 +40,19 @@
             <router-link to="/fund/fund02">Fund 02</router-link>
           </a-menu-item>
         </a-sub-menu>
+
+        <!-- dms 查询菜单组 -->
+        <a-sub-menu key="dms">
+          <template #title>
+            <span>
+              <dms-outlined />
+              <span>DMS 查询</span>
+            </span>
+          </template>
+          <a-menu-item key="dmsQuery">
+            <router-link to="/dms/dmsQuery">数据查询</router-link>
+          </a-menu-item>
+        </a-sub-menu>
       </a-menu>
     </a-layout-sider>
 
